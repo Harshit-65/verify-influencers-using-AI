@@ -1,54 +1,56 @@
-"use client";
-
-import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
+// components/CategoryFilter.jsx
+import Link from "next/link";
 
 const categories = [
-  { id: "all", label: "All Categories" },
-  { id: "Nutrition", label: "Nutrition" },
-  { id: "Medicine", label: "Medicine" },
-  { id: "Mental Health", label: "Mental Health" },
-  { id: "Fitness", label: "Fitness" },
+  "All Categories",
+  "Nutrition",
+  "Medicine",
+  "Mental Health",
+  "Fitness",
 ];
 
-export function CategoryFilter({ selected = "all" }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+export default function CategoryFilter({ selected, searchParams }) {
+  // Convert searchParams to a string format that URLSearchParams can use
+  const createSearchParamsString = (params, category) => {
+    // Create a new object from the current searchParams
+    const currentParams = Object.fromEntries(
+      Object.entries(params).filter(([key]) => key !== "category")
+    );
 
-  const createQueryString = useCallback(
-    (name, value) => {
-      const params = new URLSearchParams(searchParams);
-      if (value === "all") {
-        params.delete(name);
-      } else {
-        params.set(name, value);
-      }
-      return params.toString();
-    },
-    [searchParams]
-  );
+    // Add category if it's not "All Categories"
+    if (category !== "All Categories") {
+      currentParams.category = category;
+    }
 
-  const handleCategoryChange = (category) => {
-    const query = createQueryString("category", category);
-    router.push(`/leaderboard${query ? `?${query}` : ""}`);
+    // Convert to URLSearchParams string
+    return new URLSearchParams(currentParams).toString();
   };
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {categories.map((category) => (
-        <button
-          key={category.id}
-          onClick={() => handleCategoryChange(category.id)}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors
-            ${
-              selected === category.id || (category.id === "all" && !selected)
-                ? "bg-[#22c55e] text-white"
+    <div className="flex gap-2 flex-wrap">
+      {categories.map((category) => {
+        const searchParamsString = createSearchParamsString(
+          searchParams,
+          category
+        );
+
+        return (
+          <Link
+            key={category}
+            href={`/leaderboard${
+              searchParamsString ? `?${searchParamsString}` : ""
+            }`}
+            className={`px-4 py-2 rounded-full text-sm ${
+              selected === category ||
+              (category === "All Categories" && !selected)
+                ? "bg-[#22c55e] text-black"
                 : "bg-[#112240] text-gray-300 hover:bg-[#1d3a6e]"
             }`}
-        >
-          {category.label}
-        </button>
-      ))}
+          >
+            {category}
+          </Link>
+        );
+      })}
     </div>
   );
 }

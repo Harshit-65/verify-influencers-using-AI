@@ -15,8 +15,9 @@ export default function ClaimCard({ claim }) {
             <i className={`fas ${icon} mr-2`}></i>
             {new Date(claim.date).toLocaleDateString()}
           </div>
-          <div className="font-medium">{claim.claim}</div>
-          <div className="text-gray-400 text-sm mt-2">{claim.summary}</div>
+          <div className="font-medium">Claim: {claim.claim}</div>
+          <div className="text-sm text-gray-400 mb-2">Ai Summary</div>
+          <div className="text-gray-400 text-sm mt-2">{claim.aiSummary}</div>
         </div>
         <div className={`text-2xl font-bold text-${color}`}>
           {claim.trustScore}%
@@ -24,7 +25,6 @@ export default function ClaimCard({ claim }) {
       </div>
 
       <div className="mt-4">
-        <div className="text-sm text-gray-400 mb-2">Research References</div>
         <div className="flex items-center gap-4">
           {claim.sourceURL && (
             <a
@@ -34,7 +34,7 @@ export default function ClaimCard({ claim }) {
               className="text-[#22c55e] hover:underline"
             >
               <i className="fas fa-link mr-2"></i>
-              Source
+              View Source
             </a>
           )}
           {claim.researchURL && (
@@ -45,7 +45,7 @@ export default function ClaimCard({ claim }) {
               className="text-[#22c55e] hover:underline"
             >
               <i className="fas fa-book-open mr-2"></i>
-              Study
+              View Research
             </a>
           )}
         </div>

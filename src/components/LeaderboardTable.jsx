@@ -1,5 +1,17 @@
 import Link from "next/link";
 
+const getTrustScoreColor = (score) => {
+  if (score >= 90) return "text-[#22c55e] hover:text-[#22c55e]"; // green
+  if (score >= 50) return "text-yellow-500 hover:text-yellow-400"; // yellow
+  return "text-red-500 hover:text-red-400"; // red
+};
+
+const getTrustScoreBackground = (score) => {
+  if (score >= 90) return "bg-[#22c55e]/10";
+  if (score >= 50) return "bg-yellow-500/10";
+  return "bg-red-500/10";
+};
+
 export default function LeaderboardTable({ data }) {
   return (
     <div className="bg-[#112240] rounded-lg overflow-hidden">
@@ -37,7 +49,9 @@ export default function LeaderboardTable({ data }) {
                 <td className="px-6 py-4">
                   <Link
                     href={`/influencer/${encodeURIComponent(influencer.name)}`}
-                    className="flex items-center hover:text-[#22c55e] transition-colors"
+                    className={`flex items-center ${getTrustScoreColor(
+                      influencer.trustScore
+                    )} transition-colors`}
                   >
                     <img
                       src={influencer.image || "/default-avatar.png"}
@@ -52,7 +66,9 @@ export default function LeaderboardTable({ data }) {
                     {influencer.categories?.map((category) => (
                       <span
                         key={category}
-                        className="text-xs bg-[#22c55e] text-black px-2 py-1 rounded"
+                        className={`text-xs px-2 py-1 rounded ${getTrustScoreBackground(
+                          influencer.trustScore
+                        )}`}
                       >
                         {category}
                       </span>
@@ -60,7 +76,11 @@ export default function LeaderboardTable({ data }) {
                   </div>
                 </td>
                 <td className="px-6 py-4">{influencer.followers}</td>
-                <td className="px-6 py-4 text-[#22c55e] font-bold">
+                <td
+                  className={`px-6 py-4 font-bold ${getTrustScoreColor(
+                    influencer.trustScore
+                  )}`}
+                >
                   {influencer.trustScore}%
                 </td>
                 <td className="px-6 py-4">{influencer.claims?.length || 0}</td>

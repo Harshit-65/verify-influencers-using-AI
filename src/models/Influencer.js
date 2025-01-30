@@ -10,11 +10,16 @@ const claimSchema = new mongoose.Schema({
   researchURL: String,
   studyTitle: String,
   aiSummary: String,
+  searchQueries: {
+    sourceQuery: String,
+    researchQuery: String,
+  },
 });
 
 const influencerSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
   bio: String,
+  image: String,
   followers: String,
   yearlyRevenue: String,
   categories: [String],

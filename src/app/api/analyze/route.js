@@ -1,12 +1,18 @@
-// src\app\api\analyze\route.js
-
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Influencer from "@/models/Influencer";
 import dbConnect from "@/lib/db";
 import { analysisPrompt } from "@/utils/prompts";
-import { fetchGoogleResults } from "@/lib/googleSearch";
-import { removeDuplicates, calculateAverageScore } from "@/utils/helpers";
+import {
+  fetchSourceURL,
+  fetchResearchURL,
+  fetchImageURL,
+} from "@/lib/googleSearch";
+import {
+  removeDuplicates,
+  calculateAverageScore,
+  calculateSimilarity,
+} from "@/utils/helpers";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
 
@@ -28,53 +34,108 @@ export async function POST(request) {
       journals,
       notes
     );
-
     const response = await model.generateContent(prompt);
-    console.log(response.response.text());
     const rawResponse = response.response.text();
 
-    // Clean markdown code blocks from response
+    // Clean and parse the response
     const cleanedResponse = rawResponse
       .replace(/```json/g, "")
       .replace(/```/g, "")
       .trim();
-    const analysis = JSON.parse(cleanedResponse);
 
-    // Process and deduplicate claims
+    let jsonContent = cleanedResponse.split(/\*\*Note:\*\*/)[0].trim();
+    //   .replace(/\/\*[\s\S]*?\*\//g, "")
+    //   .replace(/\/\/.*$/gm, "")
+    //   .replace(/,(\s*[}\]])/g, "$1")
+    //   .replace(/'/g, '"')
+    //   .trim();
+
+    console.log("Raw JSON Content:", jsonContent);
+    const analysis = JSON.parse(jsonContent);
+
+    // Find existing influencer
+    const existingInfluencer = await Influencer.findOne({ name });
+
+    // Process new claims and check similarity with existing claims
     const uniqueClaims = removeDuplicates(analysis.claims);
-    const processedClaims = await Promise.all(
-      uniqueClaims.slice(0, claimsCount).map(async (claim) => ({
-        ...claim,
-        date: new Date(),
-        sourceURL: await fetchGoogleResults(`${claim.claim} ${name}`),
-        researchURL: await fetchGoogleResults(
-          `${claim.studyTitle} ${journals.join(" ")}`
-        ),
-      }))
+    let processedClaims = await Promise.all(
+      uniqueClaims.slice(0, claimsCount).map(async (claim) => {
+        // Get source and research URLs with their queries
+        const sourceResult = await fetchSourceURL(name, claim.claim);
+        const researchResult = await fetchResearchURL(
+          claim.studyTitle,
+          journals
+        );
+
+        const imageURL = await fetchImageURL(name);
+
+        console.log(sourceResult, researchResult);
+
+        console.log("Claim:", claim.claim);
+        return {
+          ...claim,
+          date: new Date(),
+          image: imageURL || "/default-avatar.png",
+          sourceURL: sourceResult.url,
+          researchURL: researchResult.url,
+          aiSummary: claim.summary, // Add AI summary from Gemini's analysis
+          sourceQuery: sourceResult.query,
+          researchQuery: researchResult.query,
+        };
+      })
     );
 
-    // Calculate trust score
+    // If influencer exists, merge claims with similarity check
+    if (existingInfluencer) {
+      const existingClaims = existingInfluencer.claims;
+      const similarityThreshold = 0.8; // 80% similarity threshold
+
+      processedClaims = processedClaims.filter((newClaim) => {
+        // Check if the new claim is significantly different from all existing claims
+        return !existingClaims.some(
+          (existingClaim) =>
+            calculateSimilarity(newClaim.claim, existingClaim.claim) >=
+            similarityThreshold
+        );
+      });
+
+      // Combine existing and new claims
+      processedClaims = [...existingClaims, ...processedClaims];
+    }
+
+    // Calculate new trust score based on all claims
     const trustScore = calculateAverageScore(processedClaims);
 
-    // Update Influencer
+    // Prepare update object with conditional fields
+    const updateObject = {
+      claims: processedClaims,
+      trustScore,
+      lastUpdated: new Date(),
+      analysisParams: {
+        timeRange,
+        claimsCount,
+        journals,
+        assistantNote: notes,
+      },
+    };
+
+    // Only update non-essential fields if they don't exist or if this is a new record
+    if (!existingInfluencer) {
+      updateObject.bio = analysis.bio;
+      updateObject.followers = analysis.followers;
+      updateObject.categories = analysis.categories;
+    }
+
+    // Add revenue analysis only if requested
+    if (includeRevenue) {
+      updateObject.yearlyRevenue = analysis.yearlyRevenue;
+    }
+
+    // Update or create influencer
     const updatedInfluencer = await Influencer.findOneAndUpdate(
       { name },
       {
-        $set: {
-          bio: analysis.bio,
-          followers: analysis.followers,
-          ...(includeRevenue && { yearlyRevenue: analysis.yearlyRevenue }),
-          categories: analysis.categories,
-          claims: processedClaims,
-          trustScore,
-          lastUpdated: new Date(),
-          analysisParams: {
-            timeRange,
-            claimsCount,
-            journals,
-            assistantNote: notes,
-          },
-        },
+        $set: updateObject,
       },
       { upsert: true, new: true }
     );

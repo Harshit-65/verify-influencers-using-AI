@@ -1,4 +1,4 @@
-// src\app\api\leaderboard\route.js
+// src/app/api/leaderboard/route.js
 import { NextResponse } from "next/server";
 import Influencer from "@/models/Influencer";
 import dbConnect from "@/lib/db";
@@ -9,37 +9,40 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
-    const timeRange = searchParams.get("timeRange") || "all";
+    const sort = searchParams.get("sort") || "highest";
     const limit = parseInt(searchParams.get("limit")) || 50;
 
-    let query = {};
-    if (category) {
-      query.categories = category;
-    }
+    const filter =
+      category && category !== "All Categories" ? { categories: category } : {};
 
-    // Add time range filter
-    if (timeRange !== "all") {
-      const dateLimit = new Date();
-      switch (timeRange) {
-        case "week":
-          dateLimit.setDate(dateLimit.getDate() - 7);
-          break;
-        case "month":
-          dateLimit.setMonth(dateLimit.getMonth() - 1);
-          break;
-        case "year":
-          dateLimit.setFullYear(dateLimit.getFullYear() - 1);
-          break;
-      }
-      query.lastUpdated = { $gte: dateLimit };
-    }
+    const sortOrder = sort === "lowest" ? 1 : -1;
 
-    const influencers = await Influencer.find(query)
-      .sort({ trustScore: -1 })
+    // Get filtered influencers
+    const influencers = await Influencer.find(filter)
+      .sort({ trustScore: sortOrder })
       .limit(limit)
-      .select("name categories followers trustScore claims");
+      .select("name categories followers trustScore claims image");
 
-    return NextResponse.json(influencers);
+    // Get global stats (unfiltered)
+    const stats = await Influencer.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalInfluencers: { $sum: 1 },
+          totalClaims: { $sum: { $size: "$claims" } },
+          avgTrustScore: { $avg: "$trustScore" },
+        },
+      },
+    ]);
+
+    return NextResponse.json({
+      influencers,
+      stats: stats[0] || {
+        totalInfluencers: 0,
+        totalClaims: 0,
+        avgTrustScore: 0,
+      },
+    });
   } catch (error) {
     console.error("Leaderboard fetch error:", error);
     return NextResponse.json(

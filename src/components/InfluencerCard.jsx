@@ -25,17 +25,13 @@ export default function InfluencerCard({ influencer }) {
             ))}
           </div>
           <div className="flex items-center gap-2 mt-2">
+            <span className="text-gray-400 text-sm">{influencer.bio}</span>
             <span className="text-[#22c55e] font-bold">
               {/* {influencer.trustScore}% */}
             </span>
             <span className="text-gray-400 text-sm">
               {/* {influencer.followers} followers */}
             </span>
-            {influencer.yearlyRevenue && (
-              <span className="text-gray-400 text-sm">
-                {/* {influencer.yearlyRevenue} */}
-              </span>
-            )}
           </div>
         </div>
       </div>

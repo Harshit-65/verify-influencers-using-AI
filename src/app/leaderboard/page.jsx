@@ -1,53 +1,108 @@
-// src\app\leaderboard\page.jsx
+// src/app/leaderboard/page.jsx
 import Header from "@/components/Header";
 import LeaderboardTable from "@/components/LeaderboardTable";
-import { CategoryFilter } from "@/components/CategoryFilter";
-import TimeRangeSelector from "@/components/TimeRangeSelector";
+import CategoryFilter from "@/components/CategoryFilter";
+import SortSelector from "@/components/SortSelector";
 
 async function getData(searchParams) {
-  const params = new URLSearchParams({
-    limit: 50,
-    timeRange: searchParams.timeRange || "all",
-    ...(searchParams.category && { category: searchParams.category }),
-  });
+  try {
+    const params = new URLSearchParams({
+      limit: 50,
+      timeRange: searchParams.timeRange || "all",
+      sort: searchParams.sort || "highest",
+      ...(searchParams.category && { category: searchParams.category }),
+    });
 
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/leaderboard?${params}`,
-    {
-      next: { revalidate: 3600 }, // Cache for 1 hour
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/leaderboard?${params}`,
+      { next: { revalidate: 3600 } }
+    );
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch leaderboard data: ${res.status}`);
     }
-  );
 
-  if (!res.ok) {
-    throw new Error("Failed to fetch leaderboard data");
+    const data = await res.json();
+
+    // Ensure default values for stats if they're missing
+    return {
+      influencers: data.influencers || [],
+      stats: {
+        totalInfluencers: data.stats?.totalInfluencers || 0,
+        totalClaims: data.stats?.totalClaims || 0,
+        avgTrustScore: data.stats?.avgTrustScore || 0,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching leaderboard data:", error);
+    // Return default values if there's an error
+    return {
+      influencers: [],
+      stats: {
+        totalInfluencers: 0,
+        totalClaims: 0,
+        avgTrustScore: 0,
+      },
+    };
   }
-
-  return res.json();
 }
 
-export const metadata = {
-  title: "Influencer Leaderboard | VerifyInfluencers",
-  description:
-    "Top health and wellness influencers ranked by trust score and scientific accuracy",
-};
-
 export default async function LeaderboardPage({ searchParams }) {
-  const influencers = await getData(searchParams);
+  const { influencers, stats } = await getData(searchParams);
+
+  const StatCard = ({ title, value, icon }) => (
+    <div className="bg-[#112240] p-6 rounded-lg">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-gray-400">{title}</p>
+          <p className="text-3xl font-bold text-white mt-2">{value}</p>
+        </div>
+        <i className={`fas ${icon} text-[#22c55e] text-3xl`}></i>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#0a192f]">
       <Header />
       <main className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-4 md:mb-0">
+        <div className="flex flex-col mb-8">
+          <h1 className="text-4xl font-bold text-white mb-4 block w-full">
             Influencer Leaderboard
           </h1>
-          <div className="flex gap-4 flex-wrap justify-center">
-            <CategoryFilter selected={searchParams.category} />
-            <TimeRangeSelector selected={searchParams.timeRange || "all"} />
-          </div>
         </div>
-        <LeaderboardTable data={influencers} className="animate-fade-in" />
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <StatCard
+            title="Active Influencers"
+            value={stats.totalInfluencers.toLocaleString()}
+            icon="fa-users"
+          />
+          <StatCard
+            title="Claims Verified"
+            value={stats.totalClaims.toLocaleString()}
+            icon="fa-check-circle"
+          />
+          <StatCard
+            title="Average Trust Score"
+            value={`${stats.avgTrustScore.toFixed(1)}%`}
+            icon="fa-star"
+          />
+        </div>
+
+        <div className="flex justify-between m-5">
+          <CategoryFilter
+            selected={searchParams.category}
+            searchParams={searchParams}
+          />
+          <SortSelector
+            selected={searchParams.sort}
+            searchParams={searchParams}
+          />
+        </div>
+
+        <LeaderboardTable data={influencers} />
       </main>
     </div>
   );
