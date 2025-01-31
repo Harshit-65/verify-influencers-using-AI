@@ -4,13 +4,13 @@ export default function InfluencerCard({ influencer }) {
   return (
     <Link
       href={`/influencer/${encodeURIComponent(influencer.name)}`}
-      className="bg-[#112240] p-6 rounded-lg hover:bg-[#1d3a6e] transition-colors"
+      // className="bg-[#112240] p-6 rounded-lg hover:bg-[#1d3a6e] transition-colors"
     >
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 bg-[#112240] p-6 rounded-lg hover:bg-[#1d3a6e] transition-colors">
         <img
           src={influencer.image || "/default-avatar.png"}
           alt={influencer.name}
-          className="w-16 h-16 rounded-full"
+          className="w-27 h-27 rounded-full "
         />
         <div>
           <h3 className="text-xl font-bold font-roboto">{influencer.name}</h3>

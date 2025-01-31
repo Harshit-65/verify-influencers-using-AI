@@ -6,12 +6,12 @@ export const removeDuplicates = (claims) => {
   });
 };
 
-// Function to calculate similarity between two strings using Levenshtein distance
+//  calculate similarity between two strings using Levenshtein distance
 export const calculateSimilarity = (str1, str2) => {
   const longer = str1.length > str2.length ? str1 : str2;
   const shorter = str1.length > str2.length ? str2 : str1;
 
-  // Calculate Levenshtein distance
+  // Levenshtein distance
   const costs = new Array();
   for (let i = 0; i <= longer.length; i++) {
     let lastValue = i;
@@ -34,7 +34,7 @@ export const calculateSimilarity = (str1, str2) => {
     }
   }
 
-  // Calculate similarity ratio
+  // similarity ratio
   return 1 - costs[shorter.length] / longer.length;
 };
 

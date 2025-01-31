@@ -14,8 +14,8 @@ async function getData(searchParams) {
     });
 
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/leaderboard?${params}`,
-      { next: { revalidate: 3600 } }
+      `${process.env.NEXT_PUBLIC_API_URL}/api/leaderboard?${params}`
+      // { next: { revalidate: 3600 } }
     );
 
     if (!res.ok) {
@@ -63,7 +63,7 @@ export default async function LeaderboardPage({ searchParams }) {
   );
 
   return (
-    <div className="min-h-screen bg-[#0a192f]">
+    <div className="animate-fade-in min-h-screen bg-[#0a192f]">
       <Header />
       <main className="container mx-auto px-4 py-8">
         <div className="flex flex-col mb-8">

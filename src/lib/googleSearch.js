@@ -91,24 +91,34 @@ export async function fetchResearchURL(studyTitle, journals) {
 //   return result.url;
 // }
 
-export async function fetchImageURL(name) {
+export async function fetchImageURL(influencerName) {
   try {
-    const query = `${name} profile image`;
-    const result = await googleSearch(
-      query,
-      process.env.GOOGLE_CSE_ID_RESEARCH
+    const query = `${influencerName} picture`;
+    const res = await fetch(
+      `https://www.googleapis.com/customsearch/v1?` +
+        new URLSearchParams({
+          q: query,
+          key: process.env.GOOGLE_API_KEY,
+          cx: process.env.GOOGLE_CSE_ID_RESEARCH, // Use your custom search engine ID
+          num: 1,
+        })
     );
 
-    // Try to get image URL from different possible locations
-    const imageUrl =
-      result?.items?.[0]?.pagemap?.cse_image?.[0]?.src ||
-      result?.items?.[0]?.pagemap?.metatags?.[0]?.["og:image"] ||
-      result?.items?.[0]?.pagemap?.imageobject?.[0]?.url ||
-      "";
+    const data = await res.json();
 
-    return imageUrl;
+    // Try to get og:image from the first result's pagemap
+    const ogImage = data.items?.[0]?.pagemap?.metatags?.[0]?.["og:image"] || "";
+
+    // Fallback to thumbnail if og:image is not available
+    const thumbnailImage =
+      data.items?.[0]?.pagemap?.cse_thumbnail?.[0]?.src || "";
+
+    return {
+      imageUrl: ogImage || thumbnailImage || "",
+      query: query,
+    };
   } catch (error) {
-    console.error("Image fetch error:", error);
-    return "";
+    console.error("Image search error:", error);
+    return { imageUrl: "", query: query };
   }
 }

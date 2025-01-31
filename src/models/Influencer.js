@@ -26,12 +26,8 @@ const influencerSchema = new mongoose.Schema({
   claims: [claimSchema],
   trustScore: Number,
   lastUpdated: Date,
-  analysisParams: {
-    timeRange: String,
-    claimsCount: Number,
-    journals: [String],
-    assistantNote: String,
-  },
+  journals: [String],
+  assistantNote: String,
 });
 
 export default mongoose.models.Influencer ||

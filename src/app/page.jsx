@@ -10,7 +10,7 @@ export const metadata = {
 
 export default async function Home() {
   return (
-    <div className="min-h-screen bg-[#0a192f]">
+    <div className="animate-fade-in min-h-screen bg-[#0a192f]">
       <main className="flex flex-col items-center justify-center px-4 py-20">
         <div className="text-center max-w-4xl">
           <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 font-roboto">
@@ -32,7 +32,7 @@ export default async function Home() {
             <Link
               href="/leaderboard"
               className="border-2 border-[#22c55e] text-[#22c55e] px-8 py-4 
-                rounded-lg text-xl hover:bg-[#22c55e]/10 transition-colors font-medium"
+                rounded-lg text-xl hover:bg-[#22c55e]/10 transition-colors font-medium "
             >
               View Leaderboard
             </Link>

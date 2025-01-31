@@ -1,3 +1,5 @@
+//src\app\api\analyze\route.js
+
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Influencer from "@/models/Influencer";
@@ -25,7 +27,13 @@ export async function POST(request) {
       body;
 
     // Gemini Analysis
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    //add jounals from request in database
+    // wirte logic here
+
+    // const imageResult = await fetchImageURL(name);
+
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
     const prompt = analysisPrompt(
       name,
       timeRange,
@@ -67,20 +75,20 @@ export async function POST(request) {
           journals
         );
 
-        const imageURL = await fetchImageURL(name);
-
         console.log(sourceResult, researchResult);
 
         console.log("Claim:", claim.claim);
         return {
           ...claim,
           date: new Date(),
-          image: imageURL || "/default-avatar.png",
           sourceURL: sourceResult.url,
           researchURL: researchResult.url,
           aiSummary: claim.summary, // Add AI summary from Gemini's analysis
-          sourceQuery: sourceResult.query,
-          researchQuery: researchResult.query,
+          searchQueries: {
+            // Match the schema structure
+            sourceQuery: sourceResult.query,
+            researchQuery: researchResult.query,
+          },
         };
       })
     );
@@ -121,7 +129,10 @@ export async function POST(request) {
 
     // Only update non-essential fields if they don't exist or if this is a new record
     if (!existingInfluencer) {
+      const imageResult = await fetchImageURL(name);
+
       updateObject.bio = analysis.bio;
+      updateObject.image = imageResult.imageUrl;
       updateObject.followers = analysis.followers;
       updateObject.categories = analysis.categories;
     }

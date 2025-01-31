@@ -38,7 +38,7 @@ export default function InfluencerProfile({ data, className }) {
 
   return (
     <div className={`${className} text-white`}>
-      <InfluencerCard influencer={influencer} />1
+      <InfluencerCard influencer={influencer} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
         <div className="bg-[#1A1B1F] p-4 rounded-lg">
           <div className="flex justify-between items-center mb-2">

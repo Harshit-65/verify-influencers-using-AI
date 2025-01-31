@@ -81,6 +81,21 @@ export default function ResearchForm() {
               required
             />
           </div>
+
+          <div className="flex items-center">
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.includeRevenue}
+                onChange={(e) =>
+                  setFormData({ ...formData, includeRevenue: e.target.checked })
+                }
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#22c55e]"></div>
+              <span className="ml-3">Include Revenue Analysis</span>
+            </label>
+          </div>
         </div>
 
         <div className="mt-6">
@@ -99,20 +114,8 @@ export default function ResearchForm() {
           Research Parameters
         </h3>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <label className="flex items-center gap-3 mb-4">
-              <input
-                type="checkbox"
-                checked={formData.includeRevenue}
-                onChange={(e) =>
-                  setFormData({ ...formData, includeRevenue: e.target.checked })
-                }
-                className="w-4 h-4 text-[#22c55e]"
-              />
-              <span>Include Revenue Analysis</span>
-            </label>
-          </div>
+        <div className="flex flex-col md:flex-row gap-6 mt-6">
+          {/* ```````````` */}
 
           <div className="space-y-4">
             <div className="flex justify-between items-center mb-4">
@@ -142,17 +145,19 @@ export default function ResearchForm() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-3 gap-4 mb-4">
               {journalsList.map((journal) => (
-                <label key={journal} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.journals.has(journal)}
-                    onChange={() => toggleJournal(journal)}
-                    className="w-4 h-4 text-[#22c55e]"
-                  />
-                  <span>{journal}</span>
-                </label>
+                <div
+                  key={journal}
+                  onClick={() => toggleJournal(journal)}
+                  className={`p-4 rounded-lg cursor-pointer border ${
+                    formData.journals.has(journal)
+                      ? "border-[#22c55e] bg-[#1d3a6e]"
+                      : "border-gray-700 bg-[#1a1a1a]"
+                  }`}
+                >
+                  {journal}
+                </div>
               ))}
             </div>
           </div>

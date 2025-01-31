@@ -10,7 +10,7 @@ export const metadata = {
 
 export default function ResearchPage() {
   return (
-    <div className="min-h-screen bg-[#0a192f]">
+    <div className="animate-fade-in min-h-screen bg-[#0a192f]">
       <Header />
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">

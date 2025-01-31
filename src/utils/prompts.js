@@ -1,3 +1,4 @@
+// src\utils\prompts.js
 export const analysisPrompt = (
   influencerName,
   timeRange,
@@ -18,7 +19,7 @@ export const analysisPrompt = (
    - ${assistantNote ? `Additional Notes: ${assistantNote}` : ""}
 
 2. **Output Requirements**
-   - Provide influencer bio (50-100 words).
+   - Provide influencer bio (50-80 words).
    - Estimate follower count (in millions, e.g., "1.2M").
    - ${includeRevenue ? 'Estimate yearly revenue (in USD, e.g., "$1.5M").' : ""}
    - Categorize influencer into one or more of: Nutrition, Medicine, Mental Health, Fitness.
@@ -68,6 +69,6 @@ export const analysisPrompt = (
    - If revenue analysis is not requested, skip revenue estimation.
    - If no assistant note is provided, skip it.
 
-6. **Content to Analyze**
-   Analyze content from ${influencerName} within the time range: ${timeRange}.
+DO NOT include any explanations, notes, or additional text before or after the JSON.
+Your response must be ONLY valid JSON that can be parsed.
 `;

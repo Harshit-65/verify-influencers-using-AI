@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
+    "dot-env": "^0.0.1",
     "mongoose": "^8.9.5",
     "next": "15.1.6",
     "react": "^19.0.0",
