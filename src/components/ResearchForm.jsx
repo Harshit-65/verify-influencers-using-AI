@@ -17,7 +17,7 @@ export default function ResearchForm() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
-    claimsCount: 50,
+    claimsCount: 1,
     journals: new Set(),
     includeRevenue: false,
     notes: "",

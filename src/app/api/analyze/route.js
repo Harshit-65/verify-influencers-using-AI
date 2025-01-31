@@ -28,11 +28,10 @@ export async function POST(request) {
 
     // Gemini Analysis
     // jounals from request in database
-    //
 
     // const imageResult = await fetchImageURL(name);
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const prompt = analysisPrompt(
       name,
       timeRange,
