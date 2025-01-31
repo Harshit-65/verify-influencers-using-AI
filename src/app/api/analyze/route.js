@@ -27,9 +27,8 @@ export async function POST(request) {
       body;
 
     // Gemini Analysis
-
-    //add jounals from request in database
-    // wirte logic here
+    // jounals from request in database
+    //
 
     // const imageResult = await fetchImageURL(name);
 
@@ -45,7 +44,7 @@ export async function POST(request) {
     const response = await model.generateContent(prompt);
     const rawResponse = response.response.text();
 
-    // Clean and parse the response
+    //  parse the response
     const cleanedResponse = rawResponse
       .replace(/```json/g, "")
       .replace(/```/g, "")
@@ -83,9 +82,8 @@ export async function POST(request) {
           date: new Date(),
           sourceURL: sourceResult.url,
           researchURL: researchResult.url,
-          aiSummary: claim.summary, // Add AI summary from Gemini's analysis
+          aiSummary: claim.summary,
           searchQueries: {
-            // Match the schema structure
             sourceQuery: sourceResult.query,
             researchQuery: researchResult.query,
           },
@@ -111,10 +109,10 @@ export async function POST(request) {
       processedClaims = [...existingClaims, ...processedClaims];
     }
 
-    // Calculate new trust score based on all claims
+    // Calculating new trust score based on all claims
     const trustScore = calculateAverageScore(processedClaims);
 
-    // Prepare update object with conditional fields
+    // update object with conditional fields
     const updateObject = {
       claims: processedClaims,
       trustScore,

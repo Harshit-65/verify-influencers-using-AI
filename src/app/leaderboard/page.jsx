@@ -24,7 +24,7 @@ async function getData(searchParams) {
 
     const data = await res.json();
 
-    // Ensure default values for stats if they're missing
+    // default values for stats if they're missing
     return {
       influencers: data.influencers || [],
       stats: {
@@ -35,7 +35,6 @@ async function getData(searchParams) {
     };
   } catch (error) {
     console.error("Error fetching leaderboard data:", error);
-    // Return default values if there's an error
     return {
       influencers: [],
       stats: {

@@ -41,7 +41,7 @@ async function formatResearchQuery(studyTitle, journals) {
   return `${keywords.join(" ")} ${journals.join(" ")}`;
 }
 
-// Generic Google search function
+//  Google search function
 async function googleSearch(query, cseId) {
   try {
     const res = await fetch(
@@ -65,7 +65,7 @@ async function googleSearch(query, cseId) {
   }
 }
 
-// Main export function for source URLs
+// source URLs
 export async function fetchSourceURL(influencerName, claim) {
   const formattedQuery = await formatClaimQuery(influencerName, claim);
   const result = await googleSearch(
@@ -75,7 +75,7 @@ export async function fetchSourceURL(influencerName, claim) {
   return result;
 }
 
-// Main export function for research URLs
+//  research URLs
 export async function fetchResearchURL(studyTitle, journals) {
   const formattedQuery = await formatResearchQuery(studyTitle, journals);
   const result = await googleSearch(
@@ -99,14 +99,14 @@ export async function fetchImageURL(influencerName) {
         new URLSearchParams({
           q: query,
           key: process.env.GOOGLE_API_KEY,
-          cx: process.env.GOOGLE_CSE_ID_RESEARCH, // Use your custom search engine ID
+          cx: process.env.GOOGLE_CSE_ID_RESEARCH,
           num: 1,
         })
     );
 
     const data = await res.json();
 
-    // Try to get og:image from the first result's pagemap
+    // Trying to get og:image from the first result's pagemap
     const ogImage = data.items?.[0]?.pagemap?.metatags?.[0]?.["og:image"] || "";
 
     // Fallback to thumbnail if og:image is not available
