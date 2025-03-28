@@ -1,74 +1,55 @@
-// src\utils\prompts.js
-export const analysisPrompt = (
-  influencerName,
-  timeRange,
-  claimsCount,
-  includeRevenue,
-  selectedJournals = [],
-  assistantNote = ""
-) => `
- You are an expert AI system that analyzes health influencers and their claims. Follow these instructions carefully:
+// Prompt for Gemini AI to extract claims from YouTube transcript
+export const extractClaimsPrompt = (transcript) => `
+Extract the most significant health or fitness claim from this YouTube video transcript.
 
-1. **Influencer Analysis**
-   - Name: ${influencerName}
-   - Time Range: ${timeRange}
-   - Number of Claims to Analyze: ${claimsCount}
-   - ${
-     includeRevenue ? "Include revenue estimation." : "Skip revenue estimation."
-   }
-   - ${assistantNote ? `Additional Notes: ${assistantNote}` : ""}
+TRANSCRIPT:
+"""
+${transcript}
+"""
 
-2. **Output Requirements**
-   - Provide influencer bio (50-80 words).
-   - Estimate follower count (in millions, e.g., "1.2M").
-   - ${includeRevenue ? 'Estimate yearly revenue (in USD, e.g., "$1.5M").' : ""}
-   - Categorize influencer into one or more of: Nutrition, Medicine, Mental Health, Fitness.
+INSTRUCTIONS:
+1. Identify the single most significant health claim made in the transcript
+2. Extract only a direct health or wellness claim (statement claiming specific health effects, benefits, or outcomes)
+3. Summarize the claim in a clear, concise sentence of 20-30 words
+4. Focus on claims related to nutrition, medicine, mental health, or fitness
+5. Return only the claim text, no additional formatting or explanation
 
-3. **Claim Analysis**
-   - Identify unique health claims (remove duplicates).
-   - Categorize claims into: Sleep, Performance, Hormones, Nutrition, Exercise, Stress, Cognition, Motivation, Recovery, Mental Health.
-   - For each claim:
-     - Generate a 40-word summary.
-     - Determine verification status: Verified, Questionable, or Debunked.
-     - Assign a trust score (0-100) based on scientific consensus.
-     - ${
-       selectedJournals.length > 0
-         ? `Cross-reference with these journals: ${selectedJournals.join(
-             ", "
-           )}.`
-         : ""
-     }
-     - Suggest a relevant study title (if applicable).
+EXAMPLE OUTPUT:
+"Regular consumption of turmeric reduces inflammation and improves joint health."
 
-4. **Output Format**
-   Return JSON format:
-   {
-     "bio": "Influencer bio (50-100 words)",
-     "followers": "Estimated follower count (e.g., '1.2M')",
-     ${
-       includeRevenue
-         ? `"yearlyRevenue": "Estimated yearly revenue (e.g., '$1.5M')",`
-         : ""
-     }
-     "categories": ["Influencer categories"],
-     "claims": [
-       {
-         "claim": "Original claim text",
-         "category": "Claim category",
-         "summary": "40-word summary",
-         "status": "Verification status",
-         "trustScore": 0-100,
-         "studyTitle": "Suggested research title"
-       }
-     ]
-   }
-
-5. **Rules**
-   - Remove duplicate claims (e.g., the same fact stated in multiple posts).
-   - If no scientific journals are selected, skip cross-referencing.
-   - If revenue analysis is not requested, skip revenue estimation.
-   - If no assistant note is provided, skip it.
-
-DO NOT include any explanations, notes, or additional text before or after the JSON.
-Your response must be ONLY valid JSON that can be parsed.
+Return ONLY the claim text as a string, no additional text or formatting.
 `;
+
+// Prompt for Perplexity AI to generate influencer summary
+export const influencerSummaryPrompt = (influencerName) => `
+Provide a brief summary of ${influencerName}'s online presence, including their approximate follower count across platforms.
+
+Return the response as JSON with this structure:
+{
+  "summary": "A 60-80 word description of who this influencer is, their background, expertise, and content focus.",
+  "followerCount": "10M" (no other text just follower count in this format: for thousand and M for million)
+}
+
+Return ONLY the valid JSON object, no additional text.
+`;
+
+// export const researchClaimPrompt = (claim) => `
+// Provide a 50-word summary of credible scientific research about the following health claim:
+
+// "${claim}"
+
+// Your response must be formatted as JSON with the following structure:
+// {
+//   "researchSummary": "A concise 50-word summary of what credible scientific research says about this claim",
+//   "articleLinks": [
+//     "https://link1.com",
+//     "https://link2.com",
+//     "https://link3.com"
+//   ],
+//   "trustScore": 75, // A number from 0-100 indicating how well the claim is supported by science
+//   "category": "Nutrition", // One of: Nutrition, Medicine, Mental Health, Fitness
+//   "verificationStatus": "Verified" // One of: Verified, Questionable, Debunked
+// }
+
+// Return ONLY the valid JSON object, with no additional text or explanations.
+// `;

@@ -29,6 +29,19 @@ body {
   }
 }
 
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-33.33% - 1rem));
+  }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.5s ease-in;
+}
+
+.animate-scroll {
+  animation: scroll 15s linear infinite;
 }

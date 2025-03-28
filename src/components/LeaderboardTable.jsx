@@ -13,6 +13,14 @@ const getTrustScoreBackground = (score) => {
 };
 
 export default function LeaderboardTable({ data }) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-[#112240] rounded-lg p-6 text-center text-gray-400">
+        No influencers found
+      </div>
+    );
+  }
+
   return (
     <div className="bg-[#112240] rounded-lg overflow-hidden">
       <div className="overflow-x-auto">
@@ -75,7 +83,9 @@ export default function LeaderboardTable({ data }) {
                     ))}
                   </div>
                 </td>
-                <td className="px-6 py-4">{influencer.followers}</td>
+                <td className="px-6 py-4">
+                  {influencer.followers?.toLocaleString() || 0}
+                </td>
                 <td
                   className={`px-6 py-4 font-bold ${getTrustScoreColor(
                     influencer.trustScore
@@ -83,7 +93,7 @@ export default function LeaderboardTable({ data }) {
                 >
                   {influencer.trustScore}%
                 </td>
-                <td className="px-6 py-4">{influencer.claims?.length || 0}</td>
+                <td className="px-6 py-4">{influencer.claims || 0}</td>
               </tr>
             ))}
           </tbody>

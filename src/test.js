@@ -10,7 +10,7 @@ async function fetchImageURL(influencerName) {
       new URLSearchParams({
         q: query,
         key: process.env.GOOGLE_API_KEY,
-        cx: process.env.GOOGLE_CSE_ID_RESEARCH,
+        cx: process.env.GOOGLE_CSE_ID,
         num: 1,
         searchType: "image", // Add this to specifically search for images
       });

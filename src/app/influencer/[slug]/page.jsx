@@ -3,10 +3,15 @@ import { notFound } from "next/navigation";
 import Header from "@/components/Header";
 import InfluencerProfile from "@/components/InfluencerProfile";
 import Influencer from "@/models/Influencer";
+import Claim from "@/models/Claim";
 import dbConnect from "@/lib/db";
+import { calculateAverageTrustScore } from "@/utils/helpers";
 
 async function getInfluencer(slug) {
+  if (!slug) return null;
+
   await dbConnect();
+
   const influencer = await Influencer.findOne({
     name: decodeURIComponent(slug),
   }).lean();
@@ -15,28 +20,57 @@ async function getInfluencer(slug) {
     notFound();
   }
 
-  return {
-    ...influencer,
+  // Fetch claims separately
+  const claims = await Claim.find({
+    influencerId: influencer._id,
+  })
+    .sort({ timestamp: -1 })
+    .lean();
+
+  // Calculate average trust score
+  const averageTrustScore = calculateAverageTrustScore(claims);
+
+  // Transform claims
+  const transformedClaims = claims.map((claim) => ({
+    _id: claim._id.toString(),
+    text: claim.claim,
+    date: claim.timestamp.toISOString(),
+    category: claim.research?.category || "Uncategorized",
+    status: claim.research?.verificationStatus || "Pending",
+    trustScore: claim.research?.trustScore || 0,
+    source: claim.research?.articleLinks?.[0] || "",
+    analysis: claim.research?.researchSummary || "",
+  }));
+
+  // Transform the influencer document
+  const transformedInfluencer = {
     _id: influencer._id.toString(),
-    lastUpdated: influencer.lastUpdated.toISOString(),
-    claims: influencer.claims.map((claim) => ({
-      ...claim,
-      _id: claim._id.toString(),
-      date: claim.date.toISOString(),
-    })),
+    name: influencer.name,
+    summary: influencer.influencerSummary,
+    image: influencer.image,
+    followers: influencer.followerCount,
+    lastUpdated: influencer.updatedAt.toISOString(),
+    claims: transformedClaims,
+    trustScore: averageTrustScore,
   };
+
+  return transformedInfluencer;
 }
 
 export async function generateMetadata({ params }) {
-  const influencer = await getInfluencer(params.slug);
+  const slug = await Promise.resolve(params.slug);
+  const influencer = await getInfluencer(slug);
+
   return {
     title: `${influencer.name} - Trust Score Analysis | VerifyInfluencers`,
-    description: influencer.bio,
+    description:
+      influencer.summary || `Analysis of ${influencer.name}'s health claims`,
   };
 }
 
 export default async function InfluencerPage({ params }) {
-  const influencer = await getInfluencer(params.slug);
+  const slug = await Promise.resolve(params.slug);
+  const influencer = await getInfluencer(slug);
 
   return (
     <div className="min-h-screen bg-[#0a0b0f]">

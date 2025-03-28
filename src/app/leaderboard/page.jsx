@@ -47,6 +47,12 @@ async function getData(searchParams) {
 }
 
 export default async function LeaderboardPage({ searchParams }) {
+  // Convert searchParams to URLSearchParams
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    params.append(key, value);
+  }
+
   const { influencers, stats } = await getData(searchParams);
 
   const StatCard = ({ title, value, icon }) => (
@@ -93,12 +99,9 @@ export default async function LeaderboardPage({ searchParams }) {
         <div className="flex justify-between m-5">
           <CategoryFilter
             selected={searchParams.category}
-            searchParams={searchParams}
+            searchParams={params}
           />
-          <SortSelector
-            selected={searchParams.sort}
-            searchParams={searchParams}
-          />
+          <SortSelector selected={searchParams.sort} searchParams={params} />
         </div>
 
         <LeaderboardTable data={influencers} />

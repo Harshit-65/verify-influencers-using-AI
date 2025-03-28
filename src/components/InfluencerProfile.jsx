@@ -1,20 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import InfluencerCard from "@/components/InfluencerCard";
 import ClaimCard from "@/components/ClaimCard";
 
-const CLAIM_CATEGORIES = [
-  "Sleep",
-  "Performance",
-  "Hormones",
-  "Nutrition",
-  "Exercise",
-  "Stress",
-  "Cognition",
-  "Motivation",
-  "Recovery",
-  "Mental Health",
-];
+const CLAIM_CATEGORIES = ["Nutrition", "Medicine", "Mental Health", "Fitness"];
 
 export default function InfluencerProfile({ data, className }) {
   const influencer = data;
@@ -22,19 +11,20 @@ export default function InfluencerProfile({ data, className }) {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("date");
 
-  const filteredClaims =
-    influencer.claims
-      ?.filter(
+  const filteredClaims = useMemo(() => {
+    return (influencer.claims || [])
+      .filter(
         (claim) =>
           (selectedStatus === "all" || claim.status === selectedStatus) &&
           (selectedCategory === "all" || claim.category === selectedCategory)
       )
-      ?.sort((a, b) => {
+      .sort((a, b) => {
         if (sortBy === "date") {
-          return new Date(b.date.$date) - new Date(a.date.$date);
+          return new Date(b.date) - new Date(a.date);
         }
-        return b.trustScore - a.trustScore;
-      }) || [];
+        return (b.trustScore || 0) - (a.trustScore || 0);
+      });
+  }, [influencer.claims, selectedStatus, selectedCategory, sortBy]);
 
   return (
     <div className={`${className} text-white`}>
@@ -194,10 +184,12 @@ export default function InfluencerProfile({ data, className }) {
       {/* Claims List */}
       <div className="mt-8">
         <h2 className="text-xl font-bold mb-4">Claims Analysis</h2>
-        <div className="space-y-4 h-64 overflow-y-auto">
+        <div className="space-y-4 max-h-[500px] overflow-y-auto">
+          {" "}
+          {/* Adjusted height */}
           {filteredClaims.length > 0 ? (
             filteredClaims.map((claim) => (
-              <ClaimCard key={claim._id?.$oid || claim._id} claim={claim} />
+              <ClaimCard key={claim._id} claim={claim} />
             ))
           ) : (
             <div className="text-gray-400 text-center py-4">

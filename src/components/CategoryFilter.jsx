@@ -10,27 +10,32 @@ const categories = [
 ];
 
 export default function CategoryFilter({ selected, searchParams }) {
-  // Convert searchParams to a string format that URLSearchParams can use
   const createSearchParamsString = (params, category) => {
-    // Create a new object from the current searchParams
-    const currentParams = Object.fromEntries(
-      Object.entries(params).filter(([key]) => key !== "category")
-    );
+    // Create a new URLSearchParams object from the current params
+    const newSearchParams = new URLSearchParams(params.toString());
+
+    // Remove the category parameter if it exists
+    newSearchParams.delete("category");
 
     // Add category if it's not "All Categories"
     if (category !== "All Categories") {
-      currentParams.category = category;
+      newSearchParams.set("category", category);
     }
 
-    // Convert to URLSearchParams string
-    return new URLSearchParams(currentParams).toString();
+    return newSearchParams.toString();
   };
 
   return (
     <div className="flex gap-2 flex-wrap">
       {categories.map((category) => {
+        // Convert searchParams to URLSearchParams if it isn't already
+        const searchParamsObj =
+          searchParams instanceof URLSearchParams
+            ? searchParams
+            : new URLSearchParams(searchParams);
+
         const searchParamsString = createSearchParamsString(
-          searchParams,
+          searchParamsObj,
           category
         );
 

@@ -11,6 +11,9 @@ export default {
         background: "var(--background)",
         foreground: "var(--foreground)",
       },
+      animation: {
+        scroll: "scroll 20s linear infinite",
+      },
     },
   },
   plugins: [],

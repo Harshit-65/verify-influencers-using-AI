@@ -1,162 +1,130 @@
 //src\app\api\analyze\route.js
 
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import Influencer from "@/models/Influencer";
 import dbConnect from "@/lib/db";
-import { analysisPrompt } from "@/utils/prompts";
-import {
-  fetchSourceURL,
-  fetchResearchURL,
-  fetchImageURL,
-} from "@/lib/googleSearch";
-import {
-  removeDuplicates,
-  calculateAverageScore,
-  calculateSimilarity,
-} from "@/utils/helpers";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
+import Influencer from "@/models/Influencer";
+import Claim from "@/models/Claim";
+import { getYoutubeTranscript } from "@/utils/youtubeTranscript";
+import { generateClaimHash, isDuplicateClaim } from "@/utils/helpers";
+import { extractClaimsPrompt, influencerSummaryPrompt } from "@/utils/prompts";
+import { queryGemini } from "@/lib/geminiApi";
+import { fetchImageURL } from "@/lib/googleSearch";
 
 export async function POST(request) {
-  await dbConnect();
-
   try {
-    const body = await request.json();
-    const { name, claimsCount, journals, includeRevenue, timeRange, notes } =
-      body;
+    await dbConnect();
 
-    // Gemini Analysis
-    // jounals from request in database
+    const { name: influencerName, inputType, inputData } = await request.json();
+    const currentDate = new Date().toISOString().split("T")[0];
+    let influencer = await Influencer.findOne({ name: influencerName });
 
-    // const imageResult = await fetchImageURL(name);
-
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const prompt = analysisPrompt(
-      name,
-      timeRange,
-      claimsCount,
-      includeRevenue,
-      journals,
-      notes
-    );
-    const response = await model.generateContent(prompt);
-    const rawResponse = response.response.text();
-
-    //  parse the response
-    const cleanedResponse = rawResponse
-      .replace(/```json/g, "")
-      .replace(/```/g, "")
-      .trim();
-
-    let jsonContent = cleanedResponse.split(/\*\*Note:\*\*/)[0].trim();
-    //   .replace(/\/\*[\s\S]*?\*\//g, "")
-    //   .replace(/\/\/.*$/gm, "")
-    //   .replace(/,(\s*[}\]])/g, "$1")
-    //   .replace(/'/g, '"')
-    //   .trim();
-
-    console.log("Raw JSON Content:", jsonContent);
-    const analysis = JSON.parse(jsonContent);
-
-    // Find existing influencer
-    const existingInfluencer = await Influencer.findOne({ name });
-
-    // Process new claims and check similarity with existing claims
-    const uniqueClaims = removeDuplicates(analysis.claims);
-    let processedClaims = await Promise.all(
-      uniqueClaims.slice(0, claimsCount).map(async (claim) => {
-        // Get source and research URLs with their queries
-        const sourceResult = await fetchSourceURL(name, claim.claim);
-        const researchResult = await fetchResearchURL(
-          claim.studyTitle,
-          journals
-        );
-
-        console.log(sourceResult, researchResult);
-
-        console.log("Claim:", claim.claim);
-        return {
-          ...claim,
-          date: new Date(),
-          sourceURL: sourceResult.url,
-          researchURL: researchResult.url,
-          aiSummary: claim.summary,
-          searchQueries: {
-            sourceQuery: sourceResult.query,
-            researchQuery: researchResult.query,
-          },
-        };
-      })
-    );
-
-    // If influencer exists, merge claims with similarity check
-    if (existingInfluencer) {
-      const existingClaims = existingInfluencer.claims;
-      const similarityThreshold = 0.8; // 80% similarity threshold
-
-      processedClaims = processedClaims.filter((newClaim) => {
-        // Check if the new claim is significantly different from all existing claims
-        return !existingClaims.some(
-          (existingClaim) =>
-            calculateSimilarity(newClaim.claim, existingClaim.claim) >=
-            similarityThreshold
-        );
-      });
-
-      // Combine existing and new claims
-      processedClaims = [...existingClaims, ...processedClaims];
+    // Extract claim text
+    let claimText = inputData;
+    if (inputType === "youtube") {
+      const transcript = await getYoutubeTranscript(inputData);
+      const extractPrompt = extractClaimsPrompt(transcript);
+      claimText = await queryGemini(extractPrompt);
     }
 
-    // Calculating new trust score based on all claims
-    const trustScore = calculateAverageScore(processedClaims);
+    // Generate hash for duplicate checking
+    const claimHash = generateClaimHash(claimText);
 
-    // update object with conditional fields
-    const updateObject = {
-      claims: processedClaims,
-      trustScore,
-      lastUpdated: new Date(),
-      analysisParams: {
-        timeRange,
-        claimsCount,
-        journals,
-        assistantNote: notes,
+    // Check for duplicate claim if influencer exists
+    if (influencer) {
+      const existingClaims = await Claim.find({
+        influencerId: influencer._id,
+      }).lean();
+
+      if (isDuplicateClaim(claimText, existingClaims)) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "A similar claim has already been verified",
+            influencerId: influencer._id,
+          },
+          { status: 409 }
+        );
+      }
+    } else {
+      // Only fetch influencer data if they don't exist
+      const summaryPrompt = influencerSummaryPrompt(influencerName);
+      const summaryData = await queryGemini(summaryPrompt);
+      const imageResult = await fetchImageURL(influencerName);
+
+      // Create new influencer
+      influencer = await Influencer.create({
+        name: influencerName,
+        influencerSummary: summaryData.summary,
+        followerCount: summaryData.followerCount,
+        image: imageResult.imageUrl,
+        categories: [], // Initialize empty categories array
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+
+    // Query backend API for claim analysis
+    const searchQuery = encodeURIComponent(claimText);
+    const response = await fetch(
+      `http://localhost:8000/search?query=${searchQuery}&date_context=${currentDate}&stored_location=us&pro_mode=true`
+    );
+    const data = await response.json();
+
+    // Extract research data from response
+    const [trustScore, category, verificationStatus] = data.llm_response
+      .split("\n")
+      .map((line) => line.split(": ")[1]);
+    const researchSummary = data.llm_response.split("RESEARCH_SUMMARY: ")[1];
+
+    // Create new claim
+    const newClaim = await Claim.create({
+      influencerId: influencer._id,
+      claim: claimText,
+      duplicateHash: claimHash,
+      research: {
+        researchSummary,
+        articleLinks: data.sources.organic.map((source) => source.link),
+        trustScore: parseInt(trustScore),
+        category,
+        verificationStatus,
       },
+      timestamp: new Date(),
+    });
+
+    // Update the influencer with the new claim and category if needed
+    const updateData = {
+      $push: {
+        claims: {
+          text: claimText,
+          date: new Date(),
+          category: category,
+          status: verificationStatus,
+          trustScore: parseInt(trustScore),
+          source: data.sources.organic[0]?.link || "",
+          analysis: researchSummary,
+        },
+      },
+      $set: { updatedAt: new Date() },
     };
 
-    // Only update non-essential fields if they don't exist or if this is a new record
-    if (!existingInfluencer) {
-      const imageResult = await fetchImageURL(name);
-
-      updateObject.bio = analysis.bio;
-      updateObject.image = imageResult.imageUrl;
-      updateObject.followers = analysis.followers;
-      updateObject.categories = analysis.categories;
+    // Add category to categories array if it doesn't exist
+    if (!influencer.categories?.includes(category)) {
+      updateData.$addToSet = { categories: category };
     }
 
-    // Add revenue analysis only if requested
-    if (includeRevenue) {
-      updateObject.yearlyRevenue = analysis.yearlyRevenue;
-    }
-
-    // Update or create influencer
-    const updatedInfluencer = await Influencer.findOneAndUpdate(
-      { name },
-      {
-        $set: updateObject,
-      },
-      { upsert: true, new: true }
-    );
+    await Influencer.findByIdAndUpdate(influencer._id, updateData, {
+      new: true,
+    });
 
     return NextResponse.json({
       success: true,
-      slug: encodeURIComponent(name),
-      influencer: updatedInfluencer,
+      influencer,
+      claims: [newClaim],
     });
   } catch (error) {
     console.error("Analysis error:", error);
     return NextResponse.json(
-      { error: "Failed to analyze influencer" },
+      { success: false, error: "Failed to analyze claim" },
       { status: 500 }
     );
   }
